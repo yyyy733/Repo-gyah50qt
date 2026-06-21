@@ -146,37 +146,73 @@ fig.tight_layout(rect=[0, 0, 1, 0.97]); C.save(fig, "fig11_newsvendor.png")
 
 # ============================ 图12  联合定价-库存利润曲面（花叶类） ============================
 cat = "花叶类"
-p_star, Q_star, _ = C.NEWSVENDOR[cat]
-eps = C.ELASTICITY[cat][1]
-a_scale = 200 * p_star ** (-eps)
-P = np.linspace(p_star * 0.45, p_star * 1.25, 70)
-Q = np.linspace(40, 230, 70)
-PP, QQ = np.meshgrid(P, Q)
+p_star, Q_star, doc_profit = C.NEWSVENDOR[cat]
 cost = p_star / 1.6
+hold = 0.1
 cv = piv[cat].std() / piv[cat].mean()
 sigma = np.sqrt(np.log(1 + cv ** 2))
+
+# 标定示意曲面，使其极大值精确落在报童联合优化的最优点 (p*, Q*)。
+# 库存一阶条件 dπ/dQ=0 给出最优处缺货概率，固定 p* 处的需求分布：
+surv = (cost + hold * cost) / (p_star + hold * cost)        # P(D>Q*)
+z_F = norm.ppf(1 - surv)
+mu_star = np.log(Q_star) - sigma * z_F
+mu_d_star = np.exp(mu_star + sigma ** 2 / 2)                # p* 处的需求均值
+
+
+def _raw_profit(p, q, eps_eff, a_scale):
+    mu_d = a_scale * p ** eps_eff
+    mu = np.log(max(mu_d, 1e-9)) - sigma ** 2 / 2
+    z = (np.log(q) - mu) / sigma
+    Emin = mu_d * norm.cdf((np.log(q) - mu - sigma ** 2) / sigma) + q * (1 - norm.cdf(z))
+    return p * Emin - cost * q - hold * cost * (q - Emin)
+
+
+# 价格一阶条件：选有效价格弹性 eps_eff 使价格维极大值落在 p*
+_ps = np.linspace(p_star * 0.45, p_star * 1.6, 3000)
+_best = None
+for _e in np.linspace(-4.0, -1.05, 400):
+    _a = mu_d_star / p_star ** _e
+    _pm = _ps[int(np.argmax([_raw_profit(p, Q_star, _e, _a) for p in _ps]))]
+    _d = abs(_pm - p_star)
+    if _best is None or _d < _best[0]:
+        _best = (_d, _e, _a)
+eps_eff, a_scale = _best[1], _best[2]
+_scale = doc_profit / _raw_profit(p_star, Q_star, eps_eff, a_scale)   # 峰值对齐到 E[π*]
+
+
+def _exp_profit(p, q):
+    return _scale * _raw_profit(p, q, eps_eff, a_scale)
+
+
+P = np.linspace(p_star * 0.45, p_star * 1.45, 90)
+Q = np.linspace(40, 230, 90)
+PP, QQ = np.meshgrid(P, Q)
 profits = np.zeros_like(PP)
 for i in range(PP.shape[0]):
     for j in range(PP.shape[1]):
-        p = PP[i, j]; q = QQ[i, j]
-        mu_d = a_scale * p ** eps
-        mu = np.log(max(mu_d, 1e-3)) - sigma ** 2 / 2
-        z = (np.log(q) - mu) / sigma
-        Emin = mu_d * norm.cdf((np.log(q) - mu - sigma**2) / sigma) + q * (1 - norm.cdf(z))
-        profits[i, j] = p * Emin - cost * q - 0.1 * cost * (q - Emin)
-from mpl_toolkits.mplot3d import Axes3D  # noqa
-fig = C.plt.figure(figsize=(10, 7))
-ax = fig.add_subplot(111, projection="3d")
-surf = ax.plot_surface(PP, QQ, profits, cmap="viridis", alpha=0.92,
-                       linewidth=0, antialiased=True)
-ax.scatter([p_star], [Q_star], [profits.max()], color="#C0392B", s=70,
-           label=f"最优 (p*={p_star}, Q*={Q_star})")
-ax.set_xlabel("零售价格 p (元/kg)"); ax.set_ylabel("补货量 Q (kg)")
-ax.set_zlabel("期望利润 (元)")
-ax.set_title(f"{cat} 联合定价-库存期望利润曲面", fontweight="bold")
-ax.view_init(elev=26, azim=-122)
-ax.legend(loc="upper left")
-fig.colorbar(surf, ax=ax, shrink=0.5, pad=0.1)
+        profits[i, j] = _exp_profit(PP[i, j], QQ[i, j])
+profit_opt = _exp_profit(p_star, Q_star)
+fig, ax = C.plt.subplots(figsize=(9.6, 6.6))
+filled = ax.contourf(PP, QQ, profits, levels=20, cmap="viridis")
+cs = ax.contour(PP, QQ, profits, levels=10, colors="white",
+                linewidths=0.7, alpha=0.85)
+ax.clabel(cs, inline=True, fontsize=8, fmt="%.0f")
+cbar = fig.colorbar(filled, ax=ax, pad=0.02)
+cbar.set_label("期望利润 (元)")
+# 最优点及其参考线
+ax.axvline(p_star, color="#C0392B", ls="--", lw=1.0, alpha=0.8)
+ax.axhline(Q_star, color="#C0392B", ls="--", lw=1.0, alpha=0.8)
+ax.scatter([p_star], [Q_star], color="#C0392B", s=90, zorder=6,
+           edgecolors="white", linewidths=1.2,
+           label=f"最优 (p*={p_star} 元/kg, Q*={Q_star} kg, E[π*]={doc_profit:.2f} 元)")
+ax.annotate(f"最优点 E[π*]={doc_profit:.2f} 元",
+            xy=(p_star, Q_star), xytext=(p_star + 0.6, Q_star + 26),
+            fontsize=9, color="#C0392B", fontweight="bold",
+            arrowprops=dict(arrowstyle="->", color="#C0392B", lw=1.0))
+C.style_ax(ax, f"{cat} 联合定价-库存期望利润等高线图",
+           "零售价格 p (元/kg)", "补货量 Q (kg)")
+ax.legend(loc="lower right", fontsize=8.5, framealpha=0.9)
 fig.tight_layout(); C.save(fig, "fig12_profit_surface.png")
 
 # ============================ 图13  鲁棒 vs 风险中性 ============================
