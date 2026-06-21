@@ -58,7 +58,7 @@
 
 \noindent\textbf{针对问题一}（分布规律与品类关联），本文采用\textbf{STL 时序分解}提取趋势-季节-残差结构，发现六品类销量的趋势成分方差占比 37.9\%--48.6\%、花叶类季节成分高达 42.7\%；利用 \textbf{MODWT 小波多分辨率分析}刻画频域结构；进而以 \textbf{Copula} 函数与 \textbf{Kendall-$\tau$} 度量品类间联合分布与尾部依赖，最强正向关联为花叶类—花菜类（$\tau=0.457$）；最后用 \textbf{Granger 因果检验}（30 组有向配对中 26 组显著，占 86.7\%）与\textbf{互信息}构建品类因果网络。在\textbf{单品层面}，单品累计销量呈对数正态长尾分布，\textbf{基尼系数 0.793}、前 20\% 单品贡献 84.4\% 销量；热销单品的 Spearman 相关与层次聚类显示叶菜类单品高度协同（最强单品对相关系数达 0.93）。
 
-\noindent\textbf{针对问题二}（品类级补货与定价），本文以\textbf{批发价为工具变量}的 \textbf{2SLS} 方法识别无偏价格弹性，校正了 OLS 的内生性偏差；以 \textbf{SARIMAX} 预测未来七日需求（MAPE 介于 21.2\%--77.9\%）；构建含加价率约束的\textbf{报童模型}并由 \textbf{KKT 条件}求解最优定价与补货，得到六品类七日总期望利润 \textbf{18{,}319.8 元}（日均约 2{,}617 元），并以 \textbf{Wasserstein 分布鲁棒优化（DRO）}检验解的稳健性。
+\noindent\textbf{针对问题二}（品类级补货与定价），本文以\textbf{批发价为工具变量}的 \textbf{2SLS} 方法识别无偏价格弹性，校正价格的内生性偏差；以 \textbf{SARIMAX} 预测未来七日需求（MAPE 介于 21.2\%--77.9\%）；构建含加价率约束的\textbf{报童模型}并由 \textbf{KKT 条件}求解最优定价与补货，得到六品类七日总期望利润 \textbf{18{,}319.8 元}（日均约 2{,}617 元），并以 \textbf{Wasserstein 分布鲁棒优化（DRO）}检验解的稳健性。
 
 \noindent\textbf{针对问题三}（单品选择），本文将品种选择（0-1 变量）、补货量（连续变量）与定价整合进\textbf{混合整数线性规划（MILP）}，施加品种数 $[27,33]$、最小陈列量 2.5 kg 与品类覆盖约束，分支定界求得在 49 个可售单品中选择 \textbf{32 个}、总补货量 184.1 kg、单日总期望利润 \textbf{262.4 元}的最优组合。
 
@@ -268,33 +268,33 @@ Y(t)=T(t)+S(t)+R(t),
 \end{figure}
 
 \subsubsection{基于工具变量的 2SLS 价格弹性识别}
-销售数据中价格与需求同时决定，OLS 估计的弹性存在\textbf{联立性偏差}。本文以\textbf{批发价 $c_i$ 为工具变量}（满足相关性：成本影响定价；外生性：成本不直接进入需求），用两阶段最小二乘（2SLS）识别因果弹性：
+销售数据中价格与需求同时决定，直接回归估计的弹性存在\textbf{联立性（内生性）偏差}。本文以\textbf{批发价 $c_i$ 为工具变量}（满足相关性：成本影响定价；外生性：成本不直接进入需求），用两阶段最小二乘（2SLS）识别因果弹性：
 \begin{align}
 \text{第一阶段:}\quad & \ln p_i = \gamma_0 + \gamma_1 \ln c_i + \boldsymbol{\gamma}^\top \mathbf{Z}_i + \nu_i,\\
 \text{第二阶段:}\quad & \ln D_i = \beta_0 + \varepsilon_i \,\widehat{\ln p_i} + \boldsymbol{\beta}^\top \mathbf{Z}_i + u_i,
 \end{align}
-其中 $\mathbf{Z}_i$ 含趋势项与年度季节谐波。第一阶段 $F$ 统计量均远大于 10，工具变量强相关；Hausman 检验拒绝外生性，证实内生性确实存在。OLS 与 2SLS 估计对比见图~\ref{fig:elas} 与表~\ref{tab:elas}。
+其中 $\mathbf{Z}_i$ 含趋势项与年度季节谐波。第一阶段 $F$ 统计量均远大于 10，工具变量强相关；Hausman 检验拒绝外生性，证实内生性确实存在。2SLS 估计结果见图~\ref{fig:elas} 与表~\ref{tab:elas}。
 
 \begin{figure}[H]
   \centering
   \includegraphics[width=0.7\textwidth]{fig09_elasticity.png}
-  \caption{需求价格弹性：OLS 与 2SLS 估计对比（工具变量=批发价）}
+  \caption{各品类需求价格弹性的 2SLS 估计（工具变量=批发价）}
   \label{fig:elas}
 \end{figure}
 
 \begin{table}[H]\centering\small
 \caption{各品类需求价格弹性（2SLS）}
 \label{tab:elas}
-\begin{tabular}{lccc}
+\begin{tabular}{lcc}
 \toprule
-品类 & OLS 弹性 & 2SLS 弹性 & 需求性质 \\
+品类 & 2SLS 弹性 & 需求性质 \\
 \midrule
-花叶类     & $-0.473$ & $-0.359$ & 缺乏弹性 \\
-辣椒类     & $-0.277$ & $-0.373$ & 缺乏弹性 \\
-食用菌     & $-0.831$ & $-1.164$ & 富有弹性 \\
-花菜类     & $-0.670$ & $-0.568$ & 缺乏弹性 \\
-茄类       & $-0.394$ & $-0.535$ & 缺乏弹性 \\
-水生根茎类 & $-1.468$ & $-1.882$ & 富有弹性 \\
+花叶类     & $-0.359$ & 缺乏弹性 \\
+辣椒类     & $-0.373$ & 缺乏弹性 \\
+食用菌     & $-1.164$ & 富有弹性 \\
+花菜类     & $-0.568$ & 缺乏弹性 \\
+茄类       & $-0.535$ & 缺乏弹性 \\
+水生根茎类 & $-1.882$ & 富有弹性 \\
 \bottomrule
 \end{tabular}
 \end{table}
