@@ -72,10 +72,14 @@ for k, cat in enumerate(C.ORDER):
     ax.bar(x + (k - 2.5) * w, share, w, label=cat, color=C.PALETTE[cat])
 ax.set_xticks(x)
 ax.set_xticklabels([f"{l}\n({'高频' if l.startswith('D') else '低频趋势'})" for l in labels])
-C.style_ax(ax, "MODWT 多分辨率小波方差贡献率", "小波分解尺度", "方差贡献率 (%)")
-ax.legend(ncol=3, loc="upper center", bbox_to_anchor=(0.5, 1.16))
-fig.tight_layout()
-C.save(fig, "fig02_wavelet.png")
+C.style_ax(ax, None, "小波分解尺度", "方差贡献率 (%)")
+ax.set_title("MODWT 多分辨率小波方差贡献率", pad=10, fontweight="bold")
+ax.legend(ncol=6, loc="lower center", bbox_to_anchor=(0.5, 1.08),
+          frameon=False, columnspacing=1.2, handletextpad=0.5)
+fig.tight_layout(rect=[0, 0, 1, 0.92])
+fig.savefig(C.FIG / "fig02_wavelet.png", bbox_inches="tight")
+C.plt.close(fig)
+print("saved fig02_wavelet.png")
 
 # ============================ Kendall / Pearson / MI 矩阵 ============================
 R = piv[C.ORDER]
