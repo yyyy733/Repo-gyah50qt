@@ -56,7 +56,7 @@
 \noindent
 本文针对生鲜超市蔬菜类商品的自动定价与补货决策问题，构建了一个\textbf{“多尺度依赖分析—联合定价库存随机优化—MILP 品种选择—信息价值量化”}四阶段集成框架。基于附件提供的 6 大品类、251 个单品、878{,}503 条销售流水与 55{,}982 条批发价记录，本文系统回答了四个子问题。
 
-\noindent\textbf{针对问题一}（分布规律与品类关联），本文采用\textbf{STL 时序分解}提取趋势-季节-残差结构，发现六品类销量的趋势成分方差占比 37.9\%--48.6\%、花叶类季节成分高达 42.7\%；利用 \textbf{MODWT 小波多分辨率分析}刻画频域结构；进而以 \textbf{Copula} 函数与 \textbf{Kendall-$\tau$} 度量品类间联合分布与尾部依赖，最强正向关联为花叶类—花菜类（$\tau=0.457$）；最后用 \textbf{Granger 因果检验}（30 组有向配对中 26 组显著，占 86.7\%）与\textbf{互信息}构建品类因果网络。
+\noindent\textbf{针对问题一}（分布规律与品类关联），本文采用\textbf{STL 时序分解}提取趋势-季节-残差结构，发现六品类销量的趋势成分方差占比 37.9\%--48.6\%、花叶类季节成分高达 42.7\%；利用 \textbf{MODWT 小波多分辨率分析}刻画频域结构；进而以 \textbf{Copula} 函数与 \textbf{Kendall-$\tau$} 度量品类间联合分布与尾部依赖，最强正向关联为花叶类—花菜类（$\tau=0.457$）；最后用 \textbf{Granger 因果检验}（30 组有向配对中 26 组显著，占 86.7\%）与\textbf{互信息}构建品类因果网络。在\textbf{单品层面}，单品累计销量呈对数正态长尾分布，\textbf{基尼系数 0.793}、前 20\% 单品贡献 84.4\% 销量；热销单品的 Spearman 相关与层次聚类显示叶菜类单品高度协同（最强单品对相关系数达 0.93）。
 
 \noindent\textbf{针对问题二}（品类级补货与定价），本文以\textbf{批发价为工具变量}的 \textbf{2SLS} 方法识别无偏价格弹性，校正了 OLS 的内生性偏差；以 \textbf{SARIMAX} 预测未来七日需求（MAPE 介于 21.2\%--77.9\%）；构建含加价率约束的\textbf{报童模型}并由 \textbf{KKT 条件}求解最优定价与补货，得到六品类七日总期望利润 \textbf{18{,}319.8 元}（日均约 2{,}617 元），并以 \textbf{Wasserstein 分布鲁棒优化（DRO）}检验解的稳健性。
 
@@ -225,6 +225,36 @@ Y(t)=T(t)+S(t)+R(t),
   \includegraphics[width=0.7\textwidth]{fig07_cluster.png}
   \caption{基于依赖结构的品类层次聚类树状图}
   \label{fig:cluster}
+\end{figure}
+
+\subsubsection{单品销量分布规律与相互关系}
+品类级分析揭示了宏观结构，但商超的补货与定价最终落到\emph{单品}。本节进一步分析 246 个有销售记录单品的销量分布规律与单品间相互关系。
+
+\textbf{（1）分布规律：长尾与帕累托集中度。} 单品三年累计销量呈典型的\textbf{右偏长尾分布}：取对数后近似服从对数正态（图~\ref{fig:itemdist} 左），中位累计销量仅约 257 kg，而头部单品高达上万千克。以洛伦兹曲线刻画集中度（图~\ref{fig:pareto} 左），\textbf{基尼系数高达 0.793}，销量前 20\% 的单品贡献了全部销量的 \textbf{84.4\%}（图~\ref{fig:pareto} 右的帕累托图亦显示累计曲线在前约 40 个单品即逼近 80\% 线），销量前 10 个单品占比即达 39.1\%。这种“少数爆款、长尾众多”的结构意味着补货应\textbf{聚焦高周转头部单品}，并为问题三“在有限品种数下选品”提供了直接依据。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{fig22_item_pareto.png}
+  \caption{单品销量集中度：洛伦兹曲线与前 40 单品帕累托图（Gini $=0.793$）}
+  \label{fig:pareto}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.96\textwidth]{fig23_item_dist.png}
+  \caption{单品累计销量的对数正态分布与累计销量前 20 单品（按品类着色）}
+  \label{fig:itemdist}
+\end{figure}
+
+\textbf{（2）类内异质性。} 各品类内部单品的销量波动差异显著：以单品日销量变异系数中位数衡量，茄类（1.03）、水生根茎类（0.79）类内单品波动最剧烈，花菜类（0.59）相对稳定，说明波动性不仅存在于品类之间，也存在于同品类不同单品之间，单品级建模十分必要。
+
+\textbf{（3）单品间相互关系。} 对销量前 25 的热销单品计算 Spearman 秩相关并作层次聚类（图~\ref{fig:itemrel}）。相关热力图呈现明显的\textbf{分块结构}：以“云南生菜、云南油麦菜、上海青、奶白菜、青梗散花”等为代表的\textbf{叶菜类单品高度正相关}（最强单品对相关系数达 0.93），常被消费者同篮购买、需求协同上行；而“西兰花、净藕、西峡香菇”等自成一簇，与叶菜簇相关性弱甚至为负。层次聚类将热销单品划分为若干需求模式相近的组团，这一单品级关联结构与前述品类级 Copula/Granger 结论相互印证，可用于\textbf{关联补货与组合定价}（簇内单品协同备货、避免同质单品重复占用陈列）。
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.98\textwidth]{fig24_item_relation.png}
+  \caption{热销单品间销量相互关系：Spearman 相关热力图与层次聚类}
+  \label{fig:itemrel}
 \end{figure}
 
 \subsection{第二阶段：联合定价-库存随机优化（问题二）}
