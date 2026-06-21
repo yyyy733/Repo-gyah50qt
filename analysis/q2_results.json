@@ -1,0 +1,80 @@
+{
+  "elasticity": {
+    "花叶类": -0.845,
+    "花菜类": -0.832,
+    "水生根茎类": -0.355,
+    "茄类": -0.242,
+    "辣椒类": -0.539,
+    "食用菌": -0.783
+  },
+  "weekly_summary": [
+    {
+      "cat": "水生根茎类",
+      "week_replenish": 201.9,
+      "avg_price": 17.23,
+      "avg_markup": 54.7,
+      "week_profit": 668.9
+    },
+    {
+      "cat": "花叶类",
+      "week_replenish": 1364.0,
+      "avg_price": 5.94,
+      "avg_markup": 74.0,
+      "week_profit": 2592.7
+    },
+    {
+      "cat": "花菜类",
+      "week_replenish": 219.8,
+      "avg_price": 15.32,
+      "avg_markup": 62.7,
+      "week_profit": 981.8
+    },
+    {
+      "cat": "茄类",
+      "week_replenish": 125.2,
+      "avg_price": 8.35,
+      "avg_markup": 68.8,
+      "week_profit": 360.2
+    },
+    {
+      "cat": "辣椒类",
+      "week_replenish": 700.1,
+      "avg_price": 6.1,
+      "avg_markup": 73.1,
+      "week_profit": 1428.5
+    },
+    {
+      "cat": "食用菌",
+      "week_replenish": 440.0,
+      "avg_price": 5.82,
+      "avg_markup": 66.9,
+      "week_profit": 981.4
+    }
+  ],
+  "recent_cost": {
+    "水生根茎类": 11.132,
+    "花叶类": 3.41,
+    "花菜类": 9.419,
+    "茄类": 4.943,
+    "辣椒类": 3.521,
+    "食用菌": 3.487
+  },
+  "recent_loss_%": {
+    "水生根茎类": 16.14,
+    "花叶类": 10.51,
+    "花菜类": 9.36,
+    "茄类": 6.28,
+    "辣椒类": 8.78,
+    "食用菌": 1.78
+  },
+  "total_week_profit": 7013.5,
+  "total_week_replenish": 3051.0,
+  "model_R2": {
+    "花叶类": 0.466,
+    "花菜类": 0.302,
+    "水生根茎类": 0.607,
+    "茄类": 0.506,
+    "辣椒类": 0.464,
+    "食用菌": 0.427
+  }
+}

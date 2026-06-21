@@ -1,0 +1,15 @@
+{
+  "n_candidates": 49,
+  "sat_factor": 1.282,
+  "n_selected": 33,
+  "selected_by_cat": {
+    "花叶类": 12,
+    "花菜类": 2,
+    "水生根茎类": 4,
+    "茄类": 3,
+    "辣椒类": 8,
+    "食用菌": 4
+  },
+  "total_profit_q3": 806.2,
+  "total_order_q3": 377.8
+}
