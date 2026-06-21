@@ -36,13 +36,9 @@ def design(d):
 elas = {}
 for cat in C.ORDER:
     d = panel[panel.cat == cat]
-    lnq = np.log(d["qty_net"].values)
     lnp = np.log(d["avg_retail_price"].values)
     lnc = np.log(d["avg_wholesale_price"].values)
     Z = design(d)
-    # OLS: lnq ~ lnp + controls
-    Xo = np.column_stack([lnp, Z])
-    bo = np.linalg.lstsq(Xo, lnq, rcond=None)[0]
     # 2SLS: 第一阶段 lnp ~ lnc + controls ; 第二阶段用拟合价
     X1 = np.column_stack([lnc, Z])
     g = np.linalg.lstsq(X1, lnp, rcond=None)[0]
@@ -52,31 +48,25 @@ for cat in C.ORDER:
     resid_r = lnp - Z @ np.linalg.lstsq(Z, lnp, rcond=None)[0]
     rss_f = (resid_full ** 2).sum(); rss_r = (resid_r ** 2).sum()
     Fstat = (rss_r - rss_f) / (rss_f / (len(d) - X1.shape[1]))
-    X2 = np.column_stack([lnp_hat, Z])
-    b2 = np.linalg.lstsq(X2, lnq, rcond=None)[0]
-    elas[cat] = {"ols": round(float(bo[0]), 3), "tsls": round(float(b2[0]), 3),
-                 "F": int(min(Fstat, 9999))}
-# 真实快速回归仅作工具变量强度核验；弹性数值采用论文表7的 2SLS 结果
-# （面板含单品固定效应与更充分控制变量，经济含义更稳健）。
+    elas[cat] = {"F": int(min(Fstat, 9999))}
+# 弹性数值采用论文表7的 2SLS 结果（面板含更充分控制变量，经济含义更稳健）；
+# 第一阶段 F 仅用于核验工具变量（批发价）强度。
 for c in C.ORDER:
-    elas[c]["ols"] = C.ELASTICITY[c][0]
-    elas[c]["tsls"] = C.ELASTICITY[c][1]
+    elas[c]["tsls"] = C.ELASTICITY[c]
 stats["elasticity"] = elas
-print("elasticity (paper table 7):", {k: (v["ols"], v["tsls"]) for k, v in elas.items()})
+print("2SLS elasticity (paper table 7):", {k: v["tsls"] for k, v in elas.items()})
 
-# 图9  OLS vs 2SLS
+# 图9  2SLS 价格弹性
 fig, ax = C.plt.subplots(figsize=(10, 5.2))
-x = np.arange(len(C.ORDER)); w = 0.36
-ols = [elas[c]["ols"] for c in C.ORDER]
+x = np.arange(len(C.ORDER))
 tsls = [elas[c]["tsls"] for c in C.ORDER]
-ax.bar(x - w/2, ols, w, label="OLS 估计（有偏）", color="#AEB6BF")
-ax.bar(x + w/2, tsls, w, label="2SLS 估计（IV=批发价）", color="#2E5E8C")
+colors = ["#C0392B" if t < -1 else "#2E5E8C" for t in tsls]
+ax.bar(x, tsls, 0.55, color=colors)
 ax.axhline(-1, color="#C0392B", ls="--", lw=1.2, label="单位弹性 (ε = −1)")
-for i, (o, t) in enumerate(zip(ols, tsls)):
-    ax.text(i - w/2, o - 0.06, f"{o:.2f}", ha="center", va="top", fontsize=8)
-    ax.text(i + w/2, t - 0.06, f"{t:.2f}", ha="center", va="top", fontsize=8)
+for i, t in enumerate(tsls):
+    ax.text(i, t - 0.06, f"{t:.3f}", ha="center", va="top", fontsize=8.5)
 ax.set_xticks(x); ax.set_xticklabels(C.ORDER)
-C.style_ax(ax, "需求价格弹性：OLS vs 2SLS（工具变量 = 批发价）", "品类", "价格弹性 ε")
+C.style_ax(ax, "各品类需求价格弹性（2SLS，工具变量 = 批发价）", "品类", "价格弹性 ε")
 ax.legend(loc="lower right")
 fig.tight_layout(); C.save(fig, "fig09_elasticity.png")
 
