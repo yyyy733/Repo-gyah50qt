@@ -164,19 +164,33 @@ for i in range(PP.shape[0]):
         z = (np.log(q) - mu) / sigma
         Emin = mu_d * norm.cdf((np.log(q) - mu - sigma**2) / sigma) + q * (1 - norm.cdf(z))
         profits[i, j] = p * Emin - cost * q - 0.1 * cost * (q - Emin)
-from mpl_toolkits.mplot3d import Axes3D  # noqa
-fig = C.plt.figure(figsize=(10, 7))
-ax = fig.add_subplot(111, projection="3d")
-surf = ax.plot_surface(PP, QQ, profits, cmap="viridis", alpha=0.92,
-                       linewidth=0, antialiased=True)
-ax.scatter([p_star], [Q_star], [profits.max()], color="#C0392B", s=70,
-           label=f"最优 (p*={p_star}, Q*={Q_star})")
-ax.set_xlabel("零售价格 p (元/kg)"); ax.set_ylabel("补货量 Q (kg)")
-ax.set_zlabel("期望利润 (元)")
-ax.set_title(f"{cat} 联合定价-库存期望利润曲面", fontweight="bold")
-ax.view_init(elev=26, azim=-122)
-ax.legend(loc="upper left")
-fig.colorbar(surf, ax=ax, shrink=0.5, pad=0.1)
+def _exp_profit(p, q):
+    mu_d = a_scale * p ** eps
+    mu = np.log(max(mu_d, 1e-3)) - sigma ** 2 / 2
+    z = (np.log(q) - mu) / sigma
+    Emin = mu_d * norm.cdf((np.log(q) - mu - sigma**2) / sigma) + q * (1 - norm.cdf(z))
+    return p * Emin - cost * q - 0.1 * cost * (q - Emin)
+profit_opt = _exp_profit(p_star, Q_star)
+fig, ax = C.plt.subplots(figsize=(9.6, 6.6))
+filled = ax.contourf(PP, QQ, profits, levels=20, cmap="viridis")
+cs = ax.contour(PP, QQ, profits, levels=10, colors="white",
+                linewidths=0.7, alpha=0.85)
+ax.clabel(cs, inline=True, fontsize=8, fmt="%.0f")
+cbar = fig.colorbar(filled, ax=ax, pad=0.02)
+cbar.set_label("期望利润 (元)")
+# 最优点及其参考线
+ax.axvline(p_star, color="#C0392B", ls="--", lw=1.0, alpha=0.8)
+ax.axhline(Q_star, color="#C0392B", ls="--", lw=1.0, alpha=0.8)
+ax.scatter([p_star], [Q_star], color="#C0392B", s=90, zorder=6,
+           edgecolors="white", linewidths=1.2,
+           label=f"最优 (p*={p_star} 元/kg, Q*={Q_star} kg, E[π*]={profit_opt:.0f} 元)")
+ax.annotate(f"E[π*]={profit_opt:.0f} 元",
+            xy=(p_star, Q_star), xytext=(p_star + 0.6, Q_star + 26),
+            fontsize=9, color="#C0392B", fontweight="bold",
+            arrowprops=dict(arrowstyle="->", color="#C0392B", lw=1.0))
+C.style_ax(ax, f"{cat} 联合定价-库存期望利润等高线图",
+           "零售价格 p (元/kg)", "补货量 Q (kg)")
+ax.legend(loc="lower right", fontsize=8.5, framealpha=0.9)
 fig.tight_layout(); C.save(fig, "fig12_profit_surface.png")
 
 # ============================ 图13  鲁棒 vs 风险中性 ============================
