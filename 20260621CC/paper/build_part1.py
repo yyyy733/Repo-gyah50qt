@@ -166,27 +166,45 @@ stats["granger_total"] = n * (n - 1)
 
 # ============================ 图5  Granger 网络 ============================
 import matplotlib.patches as mpatches
+from matplotlib.lines import Line2D
+# 出度（领先他类）/入度（被他类领先）
+outdeg = {c: sum(1 for a, b, _ in edges if a == c) for c in C.ORDER}
+indeg = {c: sum(1 for a, b, _ in edges if b == c) for c in C.ORDER}
 ang = {cat: 2 * np.pi * i / n + np.pi / 2 for i, cat in enumerate(C.ORDER)}
 pos = {c: (np.cos(a), np.sin(a)) for c, a in ang.items()}
-fig, ax = C.plt.subplots(figsize=(8.5, 8))
+fig, ax = C.plt.subplots(figsize=(9, 8.6))
 for a, b, p in edges:
     x1, y1 = pos[a]; x2, y2 = pos[b]
     lw = 2.6 if p < 0.001 else (1.7 if p < 0.01 else 1.0)
     col = "#7B241C" if p < 0.001 else ("#C0392B" if p < 0.01 else "#E59866")
-    ax.annotate("", xy=(x2 * 0.82, y2 * 0.82), xytext=(x1 * 0.82, y1 * 0.82),
-                arrowprops=dict(arrowstyle="-|>", color=col, lw=lw, alpha=0.8,
+    ax.annotate("", xy=(x2 * 0.80, y2 * 0.80), xytext=(x1 * 0.80, y1 * 0.80),
+                arrowprops=dict(arrowstyle="-|>", color=col, lw=lw, alpha=0.7,
                                 connectionstyle="arc3,rad=0.12"))
 for c, (x, y) in pos.items():
-    ax.scatter([x], [y], s=2600, color=C.PALETTE[c], zorder=5, edgecolors="white", lw=2)
+    size = 1100 + 620 * outdeg[c]                       # 节点大小 ∝ 出度（领先力）
+    follower = outdeg[c] < indeg[c]                      # 净接收端（跟随者）
+    ring = "#C0392B" if follower else "white"
+    ax.scatter([x], [y], s=size, color=C.PALETTE[c], zorder=5,
+               edgecolors=ring, lw=3.2 if follower else 2)
     ax.text(x, y, c, ha="center", va="center", color="white", fontsize=10,
             fontweight="bold", zorder=6)
-ax.set_xlim(-1.4, 1.4); ax.set_ylim(-1.4, 1.4); ax.axis("off")
+    lbl = f"出{outdeg[c]}·入{indeg[c]}"
+    ax.text(x * 1.30, y * 1.30, lbl, ha="center", va="center",
+            fontsize=9, color="#C0392B" if follower else "#333", zorder=6,
+            fontweight="bold" if follower else "normal")
+ax.set_xlim(-1.55, 1.55); ax.set_ylim(-1.55, 1.55); ax.axis("off")
 leg = [mpatches.Patch(color="#7B241C", label="p < 0.001"),
        mpatches.Patch(color="#C0392B", label="p < 0.01"),
-       mpatches.Patch(color="#E59866", label="p < 0.05")]
-ax.legend(handles=leg, loc="lower center", ncol=3, bbox_to_anchor=(0.5, -0.02))
-ax.set_title(f"品类间 Granger 因果网络（显著有向边 {len(edges)} 条）",
-             fontsize=14, fontweight="bold")
+       mpatches.Patch(color="#E59866", label="p < 0.05"),
+       Line2D([0], [0], marker="o", color="w", markerfacecolor="#999",
+              markeredgecolor="#C0392B", markeredgewidth=2.2, markersize=13,
+              label="跟随者（出度<入度）"),
+       Line2D([0], [0], marker="o", color="w", markerfacecolor="#999",
+              markersize=9, label="节点大小 ∝ 出度（领先力）")]
+ax.legend(handles=leg, loc="lower center", ncol=3, bbox_to_anchor=(0.5, -0.05),
+          fontsize=8.5, framealpha=0.9)
+ax.set_title(f"品类间 Granger 因果网络（显著有向边 {len(edges)} 条；标注“出度·入度”）",
+             fontsize=13.5, fontweight="bold")
 fig.tight_layout()
 C.save(fig, "fig05_granger_network.png")
 
